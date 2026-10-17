@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>20/10 ✦ Vũ trụ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;700;800&display=swap">
+<style>
+:root{--bg:#05030f;--card:rgba(20,14,50,.55);--line:rgba(160,140,255,.35);--tx:#eae6ff;--ac:#9d7bff;--ac2:#4de1ff;--ok:#5dffb0;--bad:#ff6b8b}
+@media (prefers-color-scheme: dark){:root{--bg:#05030f}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:radial-gradient(ellipse at 50% 30%,#1b1050 0%,var(--bg) 70%);color:var(--tx);font-family:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+canvas{position:fixed;inset:0;width:100%;height:100%}
+#ui{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+.card{width:min(460px,100%);background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px 20px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 0 60px rgba(120,90,255,.25);text-align:center;animation:in .6s ease}
+@keyframes in{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+h1{margin:0 0 6px;font-size:1.6rem;background:linear-gradient(90deg,var(--ac2),var(--ac),#ff8be6);-webkit-background-clip:text;background-clip:text;color:transparent}
+p.sub{margin:0 0 18px;opacity:.75;font-size:.95rem}
+.orbs{display:flex;justify-content:center;gap:14px;margin:18px 0 22px;flex-wrap:wrap}
+.orb{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:radial-gradient(circle at 35% 30%,#fff,var(--c) 45%,transparent 75%);box-shadow:0 0 28px var(--c);color:#150a3a;animation:fl 3s ease-in-out infinite}
+.orb:nth-child(2){animation-delay:.4s}.orb:nth-child(3){animation-delay:.8s}.orb:nth-child(4){animation-delay:1.2s}
+@keyframes fl{50%{transform:translateY(-10px)}}
+.q{font-size:1.15rem;font-weight:600;margin:0 0 14px}
+.step{font-size:.8rem;letter-spacing:.15em;opacity:.6;margin-bottom:8px}
+.opts{display:grid;gap:10px;margin-bottom:16px}
+.opt{display:flex;gap:10px;align-items:center;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--tx);font-size:1rem;cursor:pointer;transition:.2s}
+.opt b{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(157,123,255,.25);font-size:.8rem;flex:none}
+.opt:hover{border-color:var(--ac2)}
+.opt.sel{border-color:var(--ac2);background:rgba(77,225,255,.12);box-shadow:0 0 18px rgba(77,225,255,.3)}
+.opt.ok{border-color:var(--ok);background:rgba(93,255,176,.14)}
+.opt.bad{border-color:var(--bad);background:rgba(255,107,139,.14)}
+.opts.lock .opt{pointer-events:none}
+.btn{width:100%;padding:13px;border:0;border-radius:14px;font-size:1rem;font-weight:700;color:#10062e;background:linear-gradient(90deg,var(--ac2),var(--ac));cursor:pointer;transition:.2s}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.msg{min-height:22px;margin:0 0 12px;font-weight:600}
+.big{font-size:5rem;font-weight:800;line-height:1;margin:6px 0;background:linear-gradient(90deg,#4de1ff,#9d7bff,#ff8be6);-webkit-background-clip:text;background-clip:text;color:transparent}.pt{font-size:1rem;letter-spacing:.2em;opacity:.7}.res{font-size:1.5rem;font-weight:800;margin:18px 0 4px;line-height:1.35}.max{color:#ffd36b;font-weight:700;margin-top:6px}
+.g1{font-size:1.9rem;font-weight:800;line-height:1.2;background:linear-gradient(90deg,#4de1ff,#9d7bff,#ff8be6);-webkit-background-clip:text;background-clip:text;color:transparent}.g2{font-size:2.6rem;font-weight:800;margin:10px 0;color:#ffd36b;text-shadow:0 0 22px rgba(255,211,107,.6)}.g3{font-size:1.3rem;font-weight:700;line-height:1.5;margin:0 0 20px;color:#fff;text-shadow:0 0 14px rgba(157,123,255,.8)}
+.hide{display:none!important}
+#final{position:fixed;left:0;right:0;bottom:max(14px,env(safe-area-inset-bottom));text-align:center;font-size:.85rem;opacity:.6;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui"><div class="card" id="card"></div></div>
+<div id="final" class="hide"></div>
+
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+let W,H,DPR=Math.min(devicePixelRatio||1,2);
+function size(){W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);if(mode==='final')buildTargets()}
+// stars
+const stars=Array.from({length:140},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.4+.3,p:Math.random()*6}));
+// text particles
+let parts=[],mode='quiz';
+const N=1400;
+function makeParts(){parts=Array.from({length:N},()=>({x:Math.random()*W,y:Math.random()*H,tx:0,ty:0,vx:0,vy:0,h:180+Math.random()*140}))}
+let lines=["Chào Yên, Trí, Bin","Hôm nay là 20/10","chúc các Bin, Trí, Yên","1 ngày như lồn"];
+function buildTargets(){
+  const o=document.createElement('canvas');o.width=W;o.height=H;const g=o.getContext('2d');
+  const fs=Math.max(18,Math.min(W/11,54));
+  g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';g.font='800 '+fs+'px "Be Vietnam Pro",system-ui,sans-serif';
+  // shrink if too wide
+  let f=fs;while(f>14&&lines.some(l=>g.measureText(l).width>W*.92)){f-=2;g.font='800 '+f+'px "Be Vietnam Pro",system-ui,sans-serif'}
+  lines.forEach((l,i)=>g.fillText(l,W/2,H/2+(i-(lines.length-1)/2)*f*1.5));
+  const d=g.getImageData(0,0,W,H).data,pts=[],step=Math.max(2,Math.round(f/12));
+  for(let y=0;y<H;y+=step)for(let x=0;x<W;x+=step)if(d[(y*W+x)*4+3]>128)pts.push([x,y]);
+  pts.sort(()=>Math.random()-.5);
+  parts.forEach((p,i)=>{const t=pts[i%pts.length]||[W/2,H/2];p.tx=t[0];p.ty=t[1]});
+  if(pts.length<parts.length)parts.length=Math.max(pts.length,300);
+}
+let T=0;
+function loop(){
+  T+=.016;ctx.clearRect(0,0,W,H);
+  for(const s of stars){ctx.globalAlpha=.4+.6*Math.abs(Math.sin(T+s.p));ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x*W,s.y*H,s.r,0,7);ctx.fill()}
+  ctx.globalAlpha=1;
+  for(const p of parts){
+    if(mode==='final'){p.vx+=(p.tx-p.x)*.012;p.vy+=(p.ty-p.y)*.012;p.vx*=.86;p.vy*=.86}
+    else{p.vx+=Math.sin(T+p.y*.01)*.02;p.vy+=Math.cos(T+p.x*.01)*.02;p.vx*=.98;p.vy*=.98}
+    p.x+=p.vx;p.y+=p.vy;
+    if(mode!=='final'){if(p.x<0)p.x=W;if(p.x>W)p.x=0;if(p.y<0)p.y=H;if(p.y>H)p.y=0}
+    ctx.fillStyle=`hsla(${190+p.x/W*140+Math.sin(T)*15},95%,72%,${mode==='final'?.95:.35})`;
+    ctx.beginPath();ctx.arc(p.x,p.y,mode==='final'?2:1.1,0,7);ctx.fill();
+  }
+  requestAnimationFrame(loop);
+}
+// quiz
+const Q=[
+ {q:"Cả nhóm thích chơi game gì?",o:["Minecraft","Free Fire","Roblox","Cả 4 game"],a:3},
+ {q:"Món ăn mà cả nhóm mê nhất?",o:["Mỳ cay","Trà sữa","Lẩu","Gỏi cuốn"],a:3},
+ {q:"Cả nhóm thích những gì?",o:["Vũ trụ","Bóng đêm & đèn màu","Cánh đồng, gió mát"],a:2}
+];
+const card=document.getElementById('card');
+let i=0,score=0,pick=-1;
+function intro(){
+  card.innerHTML=`<div class="g1">Chào Yên, Trí, Bin</div><div class="g2">Hôm nay là 20/10</div><div class="g3">chúc các Bin, Trí, Yên<br>1 ngày như lồn</div><p class="sub">Trả lời 3 câu để biết có phải bạn tốt của Jon không nhé.<br>Mỗi câu chỉ được trả lời <b>1 lần</b>!</p>
+  <div class="orbs hide"><div class="orb" style="--c:#4de1ff">Trí</div><div class="orb" style="--c:#9d7bff">Bin</div><div class="orb" style="--c:#ff8be6">Yên</div></div>
+  <button class="btn" id="go">Bắt đầu 🚀</button>`;
+  
+  document.getElementById('go').onclick=()=>show();
+}
+function show(){
+  const k=Q[i];pick=-1;mode='quiz';card.parentElement.style.alignItems='center';
+  card.innerHTML=`<div class="step">CÂU ${i+1} / ${Q.length}</div><p class="q">${k.q}</p>
+  <div class="opts" id="opts">${k.o.map((t,n)=>`<button class="opt" data-n="${n}">${t}</button>`).join('')}</div>
+  <button class="btn" id="ok" disabled>OK, xác nhận</button>`;
+  const opts=document.getElementById('opts'),ok=document.getElementById('ok'),msg=document.getElementById('msg');
+  opts.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    opts.querySelectorAll('.opt').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');pick=+b.dataset.n;ok.disabled=false});
+  let done=false;
+  ok.onclick=()=>{
+    if(done){i++;i<Q.length?show():finish();return}
+    if(pick<0)return;if(pick===k.a)score++;i++;i<Q.length?show():finish();return;
+    opts.classList.add('lock');
+    const btns=opts.querySelectorAll('.opt');btns[k.a].classList.add('ok');
+    if(pick===k.a){score++;msg.style.color='var(--ok)';msg.textContent='Chính xác! ✨'}
+    else{btns[pick].classList.add('bad');msg.style.color='var(--bad)';msg.textContent='Sai rồi, không được thử lại đâu 😆'}
+    done=true;ok.textContent=i<Q.length-1?'Câu tiếp theo →':'Xem lời nhắn ✦';
+  };
+}
+function finish(){
+  mode='quiz';card.parentElement.style.alignItems='center';card.innerHTML=`<div class="step">KẾT QUẢ</div><div class="big">${score}/${Q.length}</div><div class="pt">ĐIỂM</div>${score===Q.length?'<div class="max">★ ĐIỂM TỐI ĐA ★</div>':''}<div class="res">${score>=2?'Đúng là anh em tốt,<br>tôi quý bn nhất ❤':'Anh em như cái lồn'}</div>`;
+  
+  
+}
+addEventListener('resize',size);
+size();makeParts();intro();loop();
+</script>
+</body>
+</html>
